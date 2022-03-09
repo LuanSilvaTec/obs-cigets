@@ -1,0 +1,104 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Lendo os dados
+
+```{r message=FALSE, warning=FALSE}
+setwd("~/GitHub/obs-cigets/analises-ad_hoc/dimensionamento/002 - metodologia de aps")
+
+library(tidyverse)
+
+cadastro_egestorab <- read_delim("cadastro_egestorab.csv", 
+    ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+        encoding = "ISO-8859-1", asciify = TRUE), 
+    trim_ws = TRUE) %>% janitor::clean_names() %>% 
+  select(cnes, ine, total_1221)
+
+
+cadastr_pop_ponderada <- read_delim("cadastr_pop_ponderada.csv", 
+    ";", escape_double = FALSE, locale = locale(date_names = "pt", 
+        encoding = "ISO-8859-1", asciify = TRUE), 
+    trim_ws = TRUE) %>% janitor::clean_names()
+```
+
+
+Juntando as bases e a agrupando por código ibge, UF, município, CNES e nome da unidade de saúde
+
+
+```{r}
+
+df <- cadastro_egestorab %>% 
+        left_join(cadastr_pop_ponderada, by = c("cnes", "ine")) %>% 
+        group_by(ibge, uf, municipio, cnes, nome_ubs) %>% 
+        summarise(total_pop = sum(total_1221), 
+                  total_ponderada = sum(pop_ponderada)) %>% 
+        mutate(prop_vulneravel = total_ponderada/total_pop)
+
+head(df)
+
+```
+
+
+A análise da população vulnerável é feita a partir de municípios. Vamos pegar o município de Goiânia como referência. 
+
+
+```{r}
+df_gyn <- df %>% 
+            filter(ibge == "520870")
+
+
+df_gyn %>% 
+  ggplot(aes(x = prop_vulneravel)) + geom_histogram() + theme_minimal()
+```
+
+# Definição de estratos de vulnerabilidade
+
+Vamos pegar o exemplo de três estratos de vulnerabilidade. Para isso, vamos dividir nossa amostra em três intervalos baseados em medidas de posição: 33º percentil (divide os estratos baixo e médio), 66º percentil (divide os estratos médio e alto).  
+
+
+```{r}
+
+q1 <- quantile(df_gyn$prop_vulneravel, probs = c(0.33))
+q2 <- quantile(df_gyn$prop_vulneravel, probs = c(0.66))
+
+df_gyn <- df_gyn %>% 
+  mutate(estrato = case_when(prop_vulneravel < q1 ~ "Baixa vulnerabilidade",
+                             prop_vulneravel > q1 & prop_vulneravel < q2 ~ "Média vulnerabilidade",
+                             prop_vulneravel > q2 ~ "Alta vulnerabilidade"), 
+         parametros = case_when(estrato == "Baixa vulnerabilidade" ~ 3500, 
+                                estrato == "Média vulnerabilidade" ~ 3000,
+                                estrato == "Alta vulnerabilidade" ~ 2000)) 
+
+
+```
+
+# Calculando o total de equipes por unidade 
+
+Para calcular o total de equipes por unidade de saúde, é necessário dividir o parâmetro associado ao estrato pela população adscrita à unidade. 
+
+```{r}
+df_gyn <- df_gyn %>% 
+  mutate(total_equipes = total_pop/parametros)
+
+sum(df_gyn$total_equipes)
+
+```
+
+# Calculando o total de profissionais necessários 
+
+```{r}
+df_gyn <- df_gyn %>% 
+            mutate(medicos = total_equipes * 1, 
+                   enfermeiros = total_equipes * 1, 
+                   tecnicos = total_equipes * 2,
+                   acs = total_pop/750)
+```
+
+
+
+
+
+
+
