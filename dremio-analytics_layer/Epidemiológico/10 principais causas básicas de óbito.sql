@@ -1,0 +1,1 @@
+SELECT CAUSABAS as cid, count(*) qtd FROM Dados.sim.DO group by causabas order by qtd desc limit 10
