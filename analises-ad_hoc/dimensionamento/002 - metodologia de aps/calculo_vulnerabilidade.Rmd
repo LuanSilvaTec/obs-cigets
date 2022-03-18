@@ -1,6 +1,8 @@
 ---
 title: "Cálculos para metodologia de atenção primária"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 # Configurando ambiente e lendo dados 
