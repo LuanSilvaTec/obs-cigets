@@ -1,6 +1,7 @@
 SELECT DISTINCT
     mrs.DS_NOMEPAD as regiao_pad,
     mrs.DS_NOME as regiao,
+    uf.co_uf as cod_uf,
     uf.DS_NOMEPAD as uf_pad,
     uf.DS_NOME as uf,
     uf.DS_sigla as uf_sigla,
