@@ -1,0 +1,5 @@
+SELECT ANO, regiao_pad, cod_uf, uf_pad, uf_sigla, SUM(POP) as populacao FROM(
+  SELECT * FROM Dados.populacional."POP_SVS.parquet" a
+  LEFT JOIN "Analytics Layer".Territorial."Municípios - Hierarquia Completa" b
+  ON substr(a.COD_MUN, 1, 6)  = cast(b.cod_municipio as varchar))
+GROUP BY ANO, regiao_pad, uf_pad, uf, uf_sigla, cod_uf
