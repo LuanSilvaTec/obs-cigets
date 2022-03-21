@@ -1,0 +1,1 @@
+SELECT * FROM Dados.populacional."IBGE_2020.parquet" where ano = 2020 and populacao < 10000
